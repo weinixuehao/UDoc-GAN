@@ -39,7 +39,7 @@ def main():
     #     print("LPNet parameters: ", sum(param.numel() for param in model.parameters())/1e6)
 
     '''  datasets  '''
-    train_dataset       = LPNet_Dataset(args.data_dir, args.model, args.patch_size)
+    train_dataset       = LPNet_Dataset(f"{args.data_dir}/doc_color_train", args.model, args.patch_size)
     # train_sampler       = torch.utils.data.distributed.DistributedSampler(train_dataset)
     # train_batch_sampler = torch.utils.data.BatchSampler(train_sampler, batch_size=args.batch_size, drop_last=True)
     # train_loader        = torch.utils.data.DataLoader(dataset=train_dataset, batch_sampler=train_batch_sampler, num_workers=20, pin_memory=False)

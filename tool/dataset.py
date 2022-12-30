@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 import re
 from torchvision.transforms import InterpolationMode
+import glob
 
 # read color file
 def readfile(file_path):
@@ -31,29 +32,34 @@ class LPNet_Dataset(Dataset):
         self.ps = ps
         self.model = model
         # root of rec_img gt_img msk_img
-        self.train_root = os.path.join(file_path, "doc_color_train")   # degrade image
-        self.train_list = sorted(os.listdir(self.train_root))
-        self.test_root  = os.path.join(file_path, "doc_color_val")     # mask: avoid non-word regoin
-        self.test_list  = sorted(os.listdir(self.test_root))
+        # self.train_root = os.path.join(file_path, "doc_color_train")   # degrade image
+        # self.train_list = sorted(os.listdir(self.train_root))
+        # self.test_root  = os.path.join(file_path, "doc_color_val")     # mask: avoid non-word regoin
+        # self.test_list  = sorted(os.listdir(self.test_root))
+        self.imageFiles = sorted(glob.glob(f"{file_path}/*.png") + glob.glob(f"{file_path}/*.jpg"))
         # background color
         self.color_list = readfile(file_path)
+        assert len(self.imageFiles) == len(self.color_list), "They must be the same length and correspond one to one."
         # use transforms
         self.transform = transforms.Compose([transforms.ToTensor(), transforms.RandomCrop((ps,ps)),
                                             transforms.RandomHorizontalFlip(), transforms.Normalize(mean=(0.5,), std=(0.5,)),])
 
     def __len__(self):
-        return len(self.train_list)
+        return len(self.imageFiles)
 
     def __getitem__(self, idx):
         '''  images  '''
-        img = cv2.imread(os.path.join(self.train_root, self.train_list[idx]))[:, :, :3]
+        # img = cv2.imread(os.path.join(self.train_root, self.train_list[idx]))[:, :, :3]
+        imageFile = self.imageFiles[idx]
+        img = cv2.imread(imageFile)[:, :, :3]
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = self.transform(img)
         '''  colors  '''
-        rgb = torch.Tensor(self.color_list[self.train_list[idx]])/255.
+        file_img = os.path.basename(imageFile)
+        rgb = torch.Tensor(self.color_list[file_img])/255.
         rgb = (rgb - 0.5) / 0.5   # Background color
         '''  file path  '''
-        file_img = self.train_list[idx]
+        # file_img = self.train_list[idx]
         return file_img, img, rgb
 
 
