@@ -1,7 +1,7 @@
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 import torch
 import torch.nn as nn
@@ -27,24 +27,25 @@ args = parser.parse_args()
 
 def main():
     '''  initial distributed mode  '''
-    rank = initial_distributed()
+    # rank = initial_distributed()
 
     if not os.path.exists(args.ckpt_dir):
         os.makedirs(args.ckpt_dir)
 
     '''  model  '''
     model = LPNet(in_channels=3, out_channels=3).cuda()
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[rank])
-    if rank==0:
-        print("LPNet parameters: ", sum(param.numel() for param in model.parameters())/1e6)
+    # model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[rank])
+    # if rank==0:
+    #     print("LPNet parameters: ", sum(param.numel() for param in model.parameters())/1e6)
 
     '''  datasets  '''
     train_dataset       = LPNet_Dataset(args.data_dir, args.model, args.patch_size)
-    train_sampler       = torch.utils.data.distributed.DistributedSampler(train_dataset)
-    train_batch_sampler = torch.utils.data.BatchSampler(train_sampler, batch_size=args.batch_size, drop_last=True)
-    train_loader        = torch.utils.data.DataLoader(dataset=train_dataset, batch_sampler=train_batch_sampler, num_workers=20, pin_memory=False)
-    if rank==0:
-        print('Number of training data: %d' % len(train_dataset))
+    # train_sampler       = torch.utils.data.distributed.DistributedSampler(train_dataset)
+    # train_batch_sampler = torch.utils.data.BatchSampler(train_sampler, batch_size=args.batch_size, drop_last=True)
+    # train_loader        = torch.utils.data.DataLoader(dataset=train_dataset, batch_sampler=train_batch_sampler, num_workers=20, pin_memory=False)
+    train_loader        = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True)
+    # if rank==0:
+    #     print('Number of training data: %d' % len(train_dataset))
 
     '''  optimizer loss scheduler  '''
     criterion = nn.L1Loss()
@@ -57,9 +58,9 @@ def main():
     start_epoch = 0
     best_loss = float("inf")
     for epoch in range(start_epoch, args.epochs):
-        if rank==0:
-            print("epoch: %d lr: %.4f" % (epoch, optimizer.param_groups[0]["lr"]))
-        train_sampler.set_epoch(epoch)
+        # if rank==0:
+        #     print("epoch: %d lr: %.4f" % (epoch, optimizer.param_groups[0]["lr"]))
+        # train_sampler.set_epoch(epoch)
 
         # train
         model.train()
@@ -73,14 +74,21 @@ def main():
             optimizer.step()
             epoch_loss += loss.item()
 
-        if rank==0:
-            # log loss
-            print("epoch:{} train loss:{}".format(epoch, epoch_loss))
-            if best_loss>epoch_loss:
-                best_loss=epoch_loss
-                torch.save(model.state_dict(), os.path.join(args.ckpt_dir, 'best_LPNet.pth'))
+        # if rank==0:
+        #     # log loss
+        #     print("epoch:{} train loss:{}".format(epoch, epoch_loss))
+        #     if best_loss>epoch_loss:
+        #         best_loss=epoch_loss
+        #         torch.save(model.state_dict(), os.path.join(args.ckpt_dir, 'best_LPNet.pth'))
+        # log loss
+        print("epoch:{} train loss:{}".format(epoch, epoch_loss))
+        if best_loss>epoch_loss:
+            best_loss=epoch_loss
+            torch.save(model.state_dict(), os.path.join(args.ckpt_dir, 'best_LPNet.pth'))
         '''  save  '''
-        if rank==0:
+        # if rank==0:
+        #     torch.save(model.state_dict(), os.path.join(args.ckpt_dir, 'latest_LPNet.pth'.format(epoch)))
+        if epoch == 0:
             torch.save(model.state_dict(), os.path.join(args.ckpt_dir, 'latest_LPNet.pth'.format(epoch)))
         scheduler.step()
 

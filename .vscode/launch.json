@@ -5,6 +5,27 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "LPNET",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/LPNet.py",
+            "args": ["--data_dir", "data_dir/lpnet"],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "testone",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/testone.py",
+            "args": [
+                "--dataroot",
+                "test_imgs"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "Python: 当前文件",
             "type": "python",
             "request": "launch",
@@ -15,7 +36,9 @@
                 "--master_port=4781",
                 "UDoc_GAN.py",
             ],
-            "env": {"CUDA_VISIBLE_DEVICES":"1"},
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "1"
+            },
         }
     ]
 }
