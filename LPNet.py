@@ -24,6 +24,14 @@ parser.add_argument('--local_rank', default=0,  help='if use distributed mode, m
 parser.add_argument('--model',      default="LPNet", help='decise which data to choose')
 args = parser.parse_args()
 
+def initDevice():
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
+    return device
 
 def main():
     '''  initial distributed mode  '''
@@ -31,9 +39,11 @@ def main():
 
     if not os.path.exists(args.ckpt_dir):
         os.makedirs(args.ckpt_dir)
-
+    
+    device = initDevice()
     '''  model  '''
-    model = LPNet(in_channels=3, out_channels=3).cuda()
+    model = LPNet(in_channels=3, out_channels=3)
+    model.to(device)
     # model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[rank])
     # if rank==0:
     #     print("LPNet parameters: ", sum(param.numel() for param in model.parameters())/1e6)
@@ -67,7 +77,7 @@ def main():
         epoch_loss = 0
         for _, (file, img, color) in enumerate(tqdm(train_loader), 0):
             optimizer.zero_grad()
-            img, color = img.cuda(), color.cuda()
+            img, color = img.to(device), color.to(device)
             Pred_color = model(img)
             loss = criterion(Pred_color, color)
             loss.backward()
