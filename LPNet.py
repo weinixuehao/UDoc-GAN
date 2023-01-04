@@ -50,10 +50,12 @@ def main():
 
     '''  datasets  '''
     train_dataset       = LPNet_Dataset(f"{args.data_dir}/doc_color_train", args.model, args.patch_size)
+    eval_dataset       = LPNet_Dataset(f"{args.data_dir}/doc_color_val", args.model, args.patch_size)
     # train_sampler       = torch.utils.data.distributed.DistributedSampler(train_dataset)
     # train_batch_sampler = torch.utils.data.BatchSampler(train_sampler, batch_size=args.batch_size, drop_last=True)
     # train_loader        = torch.utils.data.DataLoader(dataset=train_dataset, batch_sampler=train_batch_sampler, num_workers=20, pin_memory=False)
     train_loader        = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True)
+    eval_loader        = torch.utils.data.DataLoader(dataset=eval_dataset, batch_size=args.batch_size)
     # if rank==0:
     #     print('Number of training data: %d' % len(train_dataset))
 
@@ -84,6 +86,16 @@ def main():
             optimizer.step()
             epoch_loss += loss.item()
 
+        # evaluate
+        eval_loss = 0
+        model.eval()
+        with torch.no_grad():
+            for _, (file, img, color) in enumerate(tqdm(eval_loader), 0):
+                img, color = img.to(device), color.to(device)
+                Pred_color = model(img)
+                loss = criterion(Pred_color, color)
+                eval_loss += loss.item()
+
         # if rank==0:
         #     # log loss
         #     print("epoch:{} train loss:{}".format(epoch, epoch_loss))
@@ -91,7 +103,7 @@ def main():
         #         best_loss=epoch_loss
         #         torch.save(model.state_dict(), os.path.join(args.ckpt_dir, 'best_LPNet.pth'))
         # log loss
-        print("epoch:{} train loss:{}".format(epoch, epoch_loss))
+        print("epoch:{} train loss:{} eval loss:{}".format(epoch, epoch_loss, eval_loss))
         if best_loss>epoch_loss:
             best_loss=epoch_loss
             torch.save(model.state_dict(), os.path.join(args.ckpt_dir, 'best_LPNet.pth'))
